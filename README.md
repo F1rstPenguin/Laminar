@@ -1,5 +1,7 @@
 # Laminar
 
+![Laminar](laminar-banner.jpeg)
+
 Obsidian Kanban Calendar Plugin + SampleManager Launcher Plugin
 
 ## Installation
