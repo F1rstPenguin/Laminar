@@ -1,4 +1,4 @@
-# Lumina
+# Laminar
 
 Obsidian Kanban Calendar Plugin + SampleManager Launcher Plugin
 
