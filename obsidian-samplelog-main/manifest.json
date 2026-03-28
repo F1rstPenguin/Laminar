@@ -1,0 +1,10 @@
+{
+    "id": "obsidian-sample-manager-launcher",
+    "name": "Sample Manager Launcher",
+    "version": "1.0.0",
+    "minAppVersion": "0.15.0",
+    "description": "Launches the external Python Sample Manager program from within Obsidian.",
+    "author": "Yang Uijin",
+    "authorUrl": "",
+    "isDesktopOnly": true
+}
