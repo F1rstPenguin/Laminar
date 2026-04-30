@@ -26,7 +26,7 @@ __export(main_exports, {
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
-var { exec } = require("child_process");
+var { exec, spawn } = require("child_process");
 var DEFAULT_SETTINGS = {
   pythonPath: "/Users/yang-uijin/Library/CloudStorage/Dropbox/Sample_Manager/.venv/bin/python",
   scriptPath: "/Users/yang-uijin/Library/CloudStorage/Dropbox/Sample_Manager/lab_main.py"
@@ -34,10 +34,8 @@ var DEFAULT_SETTINGS = {
 var SampleManagerPlugin = class extends import_obsidian.Plugin {
   async onload() {
     await this.loadSettings();
-    const ribbonIconEl = this.addRibbonIcon("flask-conical", "Launch Sample Manager", (evt) => {
-      this.launchSampleManager();
-    });
-    ribbonIconEl.addClass("sample-manager-plugin-ribbon-class");
+    // Ribbon icon is provided by the laminar plugin; this plugin only
+    // registers the command, settings tab, and protocol handler.
     this.addCommand({
       id: "launch-sample-manager",
       name: "Launch Sample Manager",
@@ -54,45 +52,54 @@ var SampleManagerPlugin = class extends import_obsidian.Plugin {
       }
     });
   }
+  _spawnDetached(args) {
+    // spawn + detached + stdio:'ignore' + unref fully detaches the child from
+    // Obsidian's event loop. This prevents the Tk GUI process from inheriting
+    // the parent's focus/activation context, which on macOS otherwise keeps
+    // the window hidden behind Obsidian.
+    const fs = require("fs");
+    const path = require("path");
+    const pythonPath = this.settings.pythonPath;
+    const scriptPath = this.settings.scriptPath;
+    console.log("[SampleManager] launching", { pythonPath, scriptPath, args });
+    if (!fs.existsSync(pythonPath)) {
+      const msg = `Python not found: ${pythonPath}`;
+      console.error("[SampleManager]", msg);
+      new import_obsidian.Notice(msg);
+      return;
+    }
+    if (!fs.existsSync(scriptPath)) {
+      const msg = `Script not found: ${scriptPath}`;
+      console.error("[SampleManager]", msg);
+      new import_obsidian.Notice(msg);
+      return;
+    }
+    try {
+      const child = spawn(pythonPath, args, {
+        detached: true,
+        stdio: "ignore",
+        cwd: path.dirname(scriptPath),
+      });
+      child.on("error", (err) => {
+        console.error("[SampleManager] spawn error:", err);
+        new import_obsidian.Notice(`Sample Manager spawn error: ${err.message}`);
+      });
+      child.on("spawn", () => {
+        console.log("[SampleManager] spawned pid=", child.pid);
+      });
+      child.unref();
+    } catch (e) {
+      console.error("[SampleManager] launch exception:", e);
+      new import_obsidian.Notice(`Sample Manager launch exception: ${e.message}`);
+    }
+  }
   launchSampleManager() {
     new import_obsidian.Notice("Launching Sample Manager...");
-    const command = `"${this.settings.pythonPath}" "${this.settings.scriptPath}"`;
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error launching Sample Manager: ${error.message}`);
-        new import_obsidian.Notice(`Error launching Sample Manager. Check console for details.`);
-        return;
-      }
-      if (stderr) {
-        const filteredStderr = stderr.split("\n").filter((line) => {
-          return !line.includes("TSM AdjustCapsLockLEDForKeyTransitionHandling") && !line.includes("IMKCFRunLoopWakeUpReliable");
-        }).join("\n").trim();
-        if (filteredStderr) {
-          console.error(`Sample Manager stderr: ${filteredStderr}`);
-        }
-      }
-      console.log(`Sample Manager stdout: ${stdout}`);
-    });
+    this._spawnDetached([this.settings.scriptPath]);
   }
   launchSampleManagerWithNav(sampleId, stepId) {
     new import_obsidian.Notice("Launching Sample Manager (navigating to step)...");
-    const command = `"${this.settings.pythonPath}" "${this.settings.scriptPath}" --navigate "${sampleId}" "${stepId}"`;
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error launching Sample Manager: ${error.message}`);
-        new import_obsidian.Notice(`Error launching Sample Manager. Check console for details.`);
-        return;
-      }
-      if (stderr) {
-        const filteredStderr = stderr.split("\n").filter((line) => {
-          return !line.includes("TSM AdjustCapsLockLEDForKeyTransitionHandling") && !line.includes("IMKCFRunLoopWakeUpReliable");
-        }).join("\n").trim();
-        if (filteredStderr) {
-          console.error(`Sample Manager stderr: ${filteredStderr}`);
-        }
-      }
-      console.log(`Sample Manager stdout: ${stdout}`);
-    });
+    this._spawnDetached([this.settings.scriptPath, "--navigate", sampleId, stepId]);
   }
   onunload() {
   }

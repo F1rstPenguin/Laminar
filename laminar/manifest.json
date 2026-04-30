@@ -3,9 +3,8 @@
 	"name": "Laminar",
 	"version": "2.0.51",
 	"minAppVersion": "1.0.0",
-	"description": "Create markdown-backed Kanban boards in Obsidian.",
-	"author": "mgmeyers",
-	"authorUrl": "https://github.com/mgmeyers/obsidian-kanban",
-	"helpUrl": "https://publish.obsidian.md/kanban/Obsidian+Kanban+Plugin",
+	"description": "Laminar — calendar-first research workspace built on markdown boards, canvases, and Gemini-powered annotations.",
+	"author": "F1rstPenguin",
+	"authorUrl": "https://github.com/F1rstPenguin",
 	"isDesktopOnly": false
 }
